@@ -8,7 +8,7 @@ class Test(unittest.TestCase):
         super(Test, self).__init__(*args, **kwargs)
         self.filename = 'myTest.txt'
         self.train_filename = '../train.txt'
-
+        self.ngrams = ngrams.ngrams()
         self.bigram_probs = {
             'phi hello': 1 / 14,
             'hello world': 2 / 14,
@@ -45,11 +45,11 @@ class Test(unittest.TestCase):
         """
         filename = 'myTest.txt'
 
-        frequencies = ngrams.unigram_freq(filename)
-        probs = ngrams.compute_prob(frequencies)
+        frequencies = self.ngrams.unigram_freq(filename)
+        probs = self.ngrams.compute_prob(frequencies)
 
         for key, val in self.unigram_probs.items():
-            self.assertEqual(probs[key], val)
+            self.assertEqual(probs[key], log(val, 2))
 
     def test_compute_prob_bigrams(self):
         """
@@ -67,22 +67,53 @@ class Test(unittest.TestCase):
             self.assertEqual(self.bigram_probs[key], val)
 
     def test_create_bigram_freq(self):
-        for i in ngrams.bigram_freq(self.filename):
+        for i in self.ngrams.bigram_freq(self.filename):
             print(i)
 
     def test_log_probability(self):
-        bigram_training_prob = ngrams.get_bigram_prob(self.filename)
-        bigramp_p = ngrams.get_log_probability(ngrams.get_sentence_bigram('hello'), bigram_training_prob)
+        #bigram_training_prob = ngrams.get_bigram_prob(self.filename)
+        #bigramp_p = ngrams.get_log_probability(ngrams.get_sentence_bigram('hello'), bigram_training_prob)
 
         # for i in ngrams.bigram_freq('../train.txt').keys():
         #    print(i)
 
         # self.assertEqual(bigramp_p, log(1 / 14, 2))
 
-    #def test_file_size(self):
+        i = 0
+        freq = self.ngrams.bigram_freq(self.filename)
+        for k, v in freq.items():
+            #print('i: ' + k + ' = ' + v)
+            print(i, k, v)
+            i+=1
+
+        print()
+        for k, v in self.ngrams.compute_prob(freq).items():
+            print(k, v)
+
+    def test_check_for_wolf(self):
+
+        c = 0
+        lineCount = 0
+        with open('train.txt', 'r') as file:
+            with open('somefile.txt', 'w') as outputfile:
+                for line in file:
+                    lineCount += 1
+                    for word in line.split():
+                        if 'wolf' == word.lower():
+                            c += 1
+        print('lineCount:', lineCount)
+
+        freq = self.ngrams.bigram_freq('somefile.txt')
+        for f, val in freq.items():
+            print(f, val)
+
+        print('count', self.ngrams.get_unigram_count(self.train_filename))
+
 
     def test_write_probs_to_file(self):
-        bigram_training_prob = ngrams.get_bigram_prob(self.train_filename)
+        bigram_training_prob = self.ngrams.get_bigram_prob(self.train_filename)
+
+
 
         with open('somefile.txt', 'w') as file:
             for k, val in bigram_training_prob.items():
