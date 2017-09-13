@@ -1,16 +1,14 @@
 #!/usr/bin/python
 from math import log
 import sys, getopt
+import numpy as np
+import random
 
 
 class ngrams():
-    unigrams = {}
-
     def __init__(self, filename):
-        self.unigrams = self.unigram_freq(filename)
-
-    def get_unigrams(self, filename):
-        return list(self.unigram_freq(filename).keys())
+        self.unigrams, self.fileSize = self.unigram_freq(filename)
+        self.bigrams, self.B_seed = self.bigram_freq(filename)
 
     def unigram_freq(self, filename):
         unigrams = {}
@@ -24,29 +22,32 @@ class ngrams():
                     if token not in unigrams:
                         unigrams[token] = 0
                     unigrams[token] += 1
-        unigrams['phi'] = phi
-        return unigrams
+        return unigrams, phi
 
     def bigram_freq(self, filename):
         bigrams = {}
+        b_seed = {}
         with open(filename, 'r') as file:
             for line in file:
                 tokens = line.split()
                 prev = 'phi'
                 for token in tokens:
                     biToken = str.lower(prev + " " + token)
+                    token = token.lower()
+
+                    if prev not in b_seed:
+                        b_seed[prev] = set()
+
                     if biToken not in bigrams:
                         bigrams[biToken] = 0
+
+                    b_seed[prev].add(token)
                     bigrams[biToken] += 1
                     prev = token
-        return bigrams
+        bigrams['phi'] = self.fileSize
+        return bigrams, b_seed
 
     def get_sum(self, frequencies):
-        # s = 0
-        # for k, v in frequencies.items():
-        #     s += v
-        # return s
-
         s = sum(val for val in frequencies.values())
         return s
 
@@ -59,22 +60,21 @@ class ngrams():
         return probs
 
     def compute_prob_bigrams(self, frequencies):
-        # frequencies = bigram_freq(filename)
-        # N = get_sum(unigram_freq('../train.txt'))
-        N = self.get_sum(frequencies)
         probs = {}
         for bigram, freq in frequencies.items():
             word = bigram.split()[0]
-            N = self.unigrams[word]
+            N = self.unigrams[word] if word != 'phi' else self.fileSize
             probs[bigram] = log((freq / N), 2)
         return probs
 
     def compute_prob_smooth(self, frequencies):
-        N = self.get_sum(frequencies)
-        smoothing_val = N / (N + len(frequencies))
-        for freq in frequencies:
-            frequencies[freq] = (frequencies[freq] + 1) * smoothing_val
-        return frequencies
+        V = len(self.unigrams)
+        probs = {}
+        for bigram, freq in frequencies.items():
+            word = bigram.split()[0]
+            N = self.unigrams[word] if word != 'phi' else self.fileSize
+            probs[bigram] = log(((freq + 1) / (N + V)), 2)
+        return probs
 
     def get_unigram_count(self, filename):
         count = 0
@@ -83,7 +83,19 @@ class ngrams():
                 count += len(line.split())
         return count
 
-    def get_log_probability(self, test_data, probs):
+    def get_smooth_sentence_probability(self, test_data, probs):
+        prod = 0
+        V = len(self.unigrams)
+        for token in test_data:
+            prev = token.split()[0]
+            if token in probs:
+                prod += probs[token]
+            else:
+                N = self.unigrams[prev] if prev != 'phi' else self.fileSize
+                prod += log(((1) / (N + V)), 2)
+        return prod
+
+    def get_probability(self, test_data, probs):
         """
         Check to make sure that the log_2 (prob) is working
         :param test_data:
@@ -105,6 +117,13 @@ class ngrams():
         print('Smoothed Bigrams, logprob(S) = ',
               smooth_bigrams if smooth_bigrams == 'undefined' else round(smooth_bigrams, 4), "\n")
 
+    def print_gen_sentences(self, seed, sentences):
+        print('Seed = {0}\n'.format(seed))
+
+        for i, sentence in enumerate(sentences):
+                print('Sentence {0}: {1}'.format(i+1, sentence))
+        print()
+
     def get_sentence_unigram(self, line):
         return line.lower().split()
 
@@ -118,14 +137,75 @@ class ngrams():
             prev = token
         return bigrams
 
+    def read_seed_file(self, filename):
+        seeds = []
+        with open(filename, 'r') as file:
+            for line in file:
+                seeds.append(line.strip())
+        return seeds
+
     def get_unigram_prob(self, filename):
         return self.compute_prob(self.unigrams)
 
     def get_bigram_prob(self, filename):
-        return self.compute_prob_bigrams(self.bigram_freq(filename))
+        return self.compute_prob_bigrams(self.bigram_freq(filename)[0])
 
     def get_bigram_smooth_prob(self, filename):
-        return self.compute_prob_smooth(self.bigram_freq(filename))
+        return self.compute_prob_smooth(self.bigram_freq(filename)[0])
+
+    def get_B_seed(self, seed):
+        for s in self.B_seed:
+            if s in self.bigrams:
+                print()
+
+    def generate_sentence(self, seed):
+        sentence = seed
+        seed = seed.lower()
+        last = seed
+        for i in range(10):
+            if last == '.' or last == '?' or last == '!':
+                break
+            follow_words = []
+            frequencies = []
+            size = 0
+            for s2 in self.B_seed[seed]:
+                bg = self.concat_strings(seed, s2)
+                follow_words.append(s2)
+                freq = self.bigrams[bg]
+                frequencies.append(freq)
+                size += freq
+            # Compute the probability by dividing each value by the size
+            probabilities = list(map(lambda x: x / size, frequencies))
+            last = np.random.choice(follow_words, 1, p=probabilities)[0]
+            sentence += ' ' + last
+            seed = last
+        return sentence
+
+    # Helpers
+    def concat_strings(self, s1, s2):
+        return s1 + ' ' + s2
+
+    def search(self, range_value, ranges):
+
+        upper_bound = len(ranges)
+        # range_value = round(range_value*upper_bound)
+        lower_bound = 0
+
+        while lower_bound <= upper_bound:
+            mid_index = round(lower_bound + ((upper_bound - lower_bound) / 2))  # round((lower_bound + upper_bound) / 2)
+            mid = ranges[mid_index]
+            # print('mid', mid_index)
+            if mid['l_range'] <= range_value <= mid['u_range']:
+                return mid
+
+            elif range_value < mid['l_range']:
+                upper_bound = mid_index - 1
+            elif range_value > mid['u_range']:
+                # if lower_bound == mid_index:
+                #    break
+                lower_bound = mid_index + 1
+
+        return None
 
 
 def main(argv):
@@ -142,28 +222,33 @@ def main(argv):
 
     ng = ngrams(training_file)
 
-    unigram_training_prob = ng.get_unigram_prob(training_file)  # compute_prob(unigram_freq(training_file))
-
+    # Compute training file probabilities
+    unigram_training_prob = ng.get_unigram_prob(training_file)
     bigram_training_prob = ng.get_bigram_prob(training_file)
-
     bigram_smooth_training_prob = ng.get_bigram_smooth_prob(training_file)
 
     if argv[1] == '-test':
         test_file = argv[2]
 
+        # Compute probabilities for each sentence in the test file
         with open(test_file, 'r') as file:
             for line in file:
-                unigram_p = ng.get_log_probability(ng.get_sentence_unigram(line), unigram_training_prob)
-                sb = ng.get_sentence_bigram(line)
-
-                bigram_p = ng.get_log_probability(ng.get_sentence_bigram(line), bigram_training_prob)
-                bigram_ps = ng.get_log_probability(ng.get_sentence_bigram(line), bigram_smooth_training_prob)
+                unigram_p = ng.get_probability(ng.get_sentence_unigram(line), unigram_training_prob)
+                bigram_p = ng.get_probability(ng.get_sentence_bigram(line), bigram_training_prob)
+                bigram_ps = ng.get_smooth_sentence_probability(ng.get_sentence_bigram(line),
+                                                               bigram_smooth_training_prob)
 
                 ng.print_probs(line, unigram_p, bigram_p, bigram_ps)
 
     elif argv[1] == '-gen':
         seed_file = argv[2]
-        print('In gen')
+        seeds = ng.read_seed_file(seed_file)
+
+        for seed in seeds:
+            sentences = []
+            for i in range(10):
+                sentences.append(ng.generate_sentence(seed))
+            ng.print_gen_sentences(seed, sentences)
 
 
 if __name__ == "__main__":

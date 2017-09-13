@@ -8,7 +8,7 @@ class Test(unittest.TestCase):
         super(Test, self).__init__(*args, **kwargs)
         self.filename = 'myTest.txt'
         self.train_filename = '../train.txt'
-        self.ngrams = ngrams.ngrams()
+        self.ngrams = ngrams.ngrams(self.filename)
         self.bigram_probs = {
             'phi hello': 1 / 14,
             'hello world': 2 / 14,
@@ -70,6 +70,24 @@ class Test(unittest.TestCase):
         for i in self.ngrams.bigram_freq(self.filename):
             print(i)
 
+    def test_smoothing(self):
+        ngs = ngrams.ngrams(self.train_filename)
+
+        freqs = ngs.bigram_freq(self.train_filename)
+
+        ngs.compute_prob_smooth(freqs)
+
+        sentence = ngs.get_sentence_bigram('Wolf')
+
+        prob = ngs.compute_prob_bigrams(freqs)
+        prob = ngs.compute_prob_smooth(freqs)
+        sentence_prob = ngs.get_log_smooth_probability(sentence, prob)
+
+        print("unigrams", ngs.unigrams)
+        print("filesize", ngs.fileSize)
+
+        self.assertEqual(-12.8261, sentence_prob)
+
     def test_log_probability(self):
         #bigram_training_prob = ngrams.get_bigram_prob(self.filename)
         #bigramp_p = ngrams.get_log_probability(ngrams.get_sentence_bigram('hello'), bigram_training_prob)
@@ -79,16 +97,15 @@ class Test(unittest.TestCase):
 
         # self.assertEqual(bigramp_p, log(1 / 14, 2))
 
-        i = 0
-        freq = self.ngrams.bigram_freq(self.filename)
-        for k, v in freq.items():
-            #print('i: ' + k + ' = ' + v)
-            print(i, k, v)
-            i+=1
+        c = 0
+        with open(self.filename, 'r') as f:
+            for l in f:
+                c+=1
+        print("phi frequecncy", c)
 
-        print()
-        for k, v in self.ngrams.compute_prob(freq).items():
-            print(k, v)
+        # print()
+        # for k, v in self.ngrams.compute_prob(freq).items():
+        #     print(k, v)
 
     def test_check_for_wolf(self):
 
