@@ -2,10 +2,10 @@
 from math import log
 import sys, getopt
 import numpy as np
-import random
-
+from pathlib import Path
 
 class ngrams():
+
     def __init__(self, filename):
         self.unigrams, self.fileSize = self.unigram_freq(filename)
         self.bigrams, self.B_seed = self.bigram_freq(filename)
@@ -111,18 +111,29 @@ class ngrams():
         return prod
 
     def print_probs(self, sentence, unigrams, bigrams, smooth_bigrams):
-        print('S =', sentence)
-        print('Unsmoothed Unigrams, logprob(S) =', round(unigrams, 4))
-        print('Unsmoothed Bigrams, logprob(S) = ', bigrams if bigrams == 'undefined' else round(bigrams, 4))
-        print('Smoothed Bigrams, logprob(S) = ',
-              smooth_bigrams if smooth_bigrams == 'undefined' else round(smooth_bigrams, 4), "\n")
+
+        print_data = 'S = {0}\n\n'.format(sentence.strip())
+        print_data += 'Unsmoothed Unigrams, logprob(S) = {0}\n'.format(round(unigrams, 4))
+        print_data += 'Unsmoothed Bigrams, logprob(S) = {0}\n'.format(
+            bigrams if bigrams == 'undefined' else round(bigrams, 4))
+        print_data += 'Smoothed Bigrams, logprob(S) = {0}\n'.format(round(smooth_bigrams, 4))
+
+        print(print_data)
+        return print_data
 
     def print_gen_sentences(self, seed, sentences):
-        print('Seed = {0}\n'.format(seed))
+        data = 'Seed = {0}\n'.format(seed)
+        result = data + '\n'
+        print(data)
 
         for i, sentence in enumerate(sentences):
-                print('Sentence {0}: {1}'.format(i+1, sentence))
+            data = 'Sentence {0}: {1}'.format(i+1, sentence)
+            result += data + '\n'
+            print(data)
+
         print()
+
+        return result
 
     def get_sentence_unigram(self, line):
         return line.lower().split()
@@ -141,7 +152,7 @@ class ngrams():
         seeds = []
         with open(filename, 'r') as file:
             for line in file:
-                seeds.append(line.strip())
+                seeds.append(line.split()[0])
         return seeds
 
     def get_unigram_prob(self, filename):
@@ -185,71 +196,89 @@ class ngrams():
     def concat_strings(self, s1, s2):
         return s1 + ' ' + s2
 
-    def search(self, range_value, ranges):
+    # def search(self, range_value, ranges):
+    #     upper_bound = len(ranges)
+    #     lower_bound = 0
+    #
+    #     while lower_bound <= upper_bound:
+    #         mid_index = round(lower_bound + ((upper_bound - lower_bound) / 2))
+    #         mid = ranges[mid_index]
+    #         # print('mid', mid_index)
+    #         if mid['l_range'] <= range_value <= mid['u_range']:
+    #             return mid
+    #
+    #         elif range_value < mid['l_range']:
+    #             upper_bound = mid_index - 1
+    #         elif range_value > mid['u_range']:
+    #             # if lower_bound == mid_index:
+    #             #    break
+    #             lower_bound = mid_index + 1
+    #
+    #     return None
 
-        upper_bound = len(ranges)
-        # range_value = round(range_value*upper_bound)
-        lower_bound = 0
+def does_file_exist(filename):
+    file = Path(filename)
+    if file.is_file():
+        return True
+    return False
 
-        while lower_bound <= upper_bound:
-            mid_index = round(lower_bound + ((upper_bound - lower_bound) / 2))  # round((lower_bound + upper_bound) / 2)
-            mid = ranges[mid_index]
-            # print('mid', mid_index)
-            if mid['l_range'] <= range_value <= mid['u_range']:
-                return mid
-
-            elif range_value < mid['l_range']:
-                upper_bound = mid_index - 1
-            elif range_value > mid['u_range']:
-                # if lower_bound == mid_index:
-                #    break
-                lower_bound = mid_index + 1
-
-        return None
-
+def genereate_trace_file(type, data, extension='trace'):
+    with open('ngrams{0}.{1}'.format(type, extension), 'w') as of:
+        for line in data:
+            of.write(line + '\n')
 
 def main(argv):
-    training_file = ''
-    test_file = ''
-    seed_file = ''
-    ng = None
 
     if not len(argv) == 3:
         print('ngrams.py <training_file> -test <test_file>')
         sys.exit(2)
 
+    if not does_file_exist(argv[0]):
+        print('In argument 1 file does not exist: {0}'.format(argv[0]))
+        sys.exit(2)
+    elif not does_file_exist(argv[2]):
+        print('In argument 3 file does not exist: {0}'.format(argv[2]))
+        sys.exit(2)
+
     training_file = argv[0]
-
-    ng = ngrams(training_file)
-
-    # Compute training file probabilities
-    unigram_training_prob = ng.get_unigram_prob(training_file)
-    bigram_training_prob = ng.get_bigram_prob(training_file)
-    bigram_smooth_training_prob = ng.get_bigram_smooth_prob(training_file)
 
     if argv[1] == '-test':
         test_file = argv[2]
+        ng = ngrams(training_file)
+
+        # Compute training file probabilities
+        unigram_training_prob = ng.get_unigram_prob(training_file)
+        bigram_training_prob = ng.get_bigram_prob(training_file)
+        bigram_smooth_training_prob = ng.get_bigram_smooth_prob(training_file)
 
         # Compute probabilities for each sentence in the test file
         with open(test_file, 'r') as file:
+            print_data = []
             for line in file:
                 unigram_p = ng.get_probability(ng.get_sentence_unigram(line), unigram_training_prob)
                 bigram_p = ng.get_probability(ng.get_sentence_bigram(line), bigram_training_prob)
                 bigram_ps = ng.get_smooth_sentence_probability(ng.get_sentence_bigram(line),
                                                                bigram_smooth_training_prob)
 
-                ng.print_probs(line, unigram_p, bigram_p, bigram_ps)
+                print_data.append(ng.print_probs(line, unigram_p, bigram_p, bigram_ps))
+            genereate_trace_file(argv[1], print_data)
 
     elif argv[1] == '-gen':
+        ng = ngrams(training_file)
+
         seed_file = argv[2]
         seeds = ng.read_seed_file(seed_file)
 
+        print_data = []
         for seed in seeds:
             sentences = []
             for i in range(10):
                 sentences.append(ng.generate_sentence(seed))
-            ng.print_gen_sentences(seed, sentences)
+            print_data.append(ng.print_gen_sentences(seed, sentences))
 
+        genereate_trace_file(argv[1], print_data)
+    else:
+        print('Unknown option: {0}'.format(argv[1]))
 
 if __name__ == "__main__":
     main(sys.argv[1:])
