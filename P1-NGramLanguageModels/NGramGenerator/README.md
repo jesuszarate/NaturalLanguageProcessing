@@ -1,6 +1,6 @@
 #Ngrams
 
-###Python Version used:
+### Python Version used:
 ************************
 
 * Python 3.6.0
@@ -25,7 +25,7 @@ seed file provided ```seeds.txt``` file provided, and will output a  file
 called ```ngrams-gen.trace```
 
 
-###Example Output -test output
+### Example Output -test output
 ******************
 
 ```
@@ -69,7 +69,7 @@ Smoothed Bigrams, logprob(S) = -82.1001
 ```
 
 
-###Example Output -gen output
+### Example Output -gen output
 ******************
 
 ```
