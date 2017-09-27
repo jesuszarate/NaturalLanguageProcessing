@@ -1,0 +1,13 @@
+learning verb 0.003
+changes verb 0.004
+thoroughly adv 0.002
+learning noun 0.001
+changes noun 0.003
+noun noun 0.1
+noun verb 0.4
+adv verb 0.4
+adv noun 0.1
+verb noun 0.3
+verb verb 0.1
+noun phi 0.2
+verb phi 0.3

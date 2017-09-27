@@ -51,6 +51,13 @@ class ngrams():
         s = sum(val for val in frequencies.values())
         return s
 
+    def get_bigram_N(self, word, frequencies):
+
+        sum = 0
+        for val, key in frequencies.items():
+            sum += val if key == word else 0
+        return sum
+
     def compute_prob(self, frequencies):
         N = self.get_sum(frequencies)
         probs = {}

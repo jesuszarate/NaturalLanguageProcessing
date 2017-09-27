@@ -1,0 +1,58 @@
+PROCESSING SENTENCE: bears fish
+
+P(bears=verb) = -8.96578428466
+P(fish=noun) = -12.9867101235
+P(bears=prep) = 0
+P(bears=noun) = -5.96578428466
+P(bears=phi) = 0
+P(fish=prep) = 0
+P(fish=phi) = 0
+P(bears=inf) = 0
+P(fish=inf) = 0
+P(fish=verb) = -10.4237739291
+
+PROCESSING SENTENCE: mark has fish
+
+P(mark=inf) = 0
+P(fish=noun) = -13.4971671879
+P(has=inf) = 0
+P(mark=noun) = -3.79585928322
+P(fish=prep) = 0
+P(has=verb) = -9.47624134902
+P(has=noun) = 0
+P(fish=phi) = 0
+P(mark=verb) = -7.38082178394
+P(fish=inf) = 0
+P(mark=phi) = 0
+P(fish=verb) = 0
+P(mark=prep) = 0
+P(has=phi) = 0
+P(has=prep) = 0
+
+PROCESSING SENTENCE: mark likes to fish for fish
+
+P(mark=inf) = 0
+P(to=prep) = 0
+P(fish=prep) = 0
+P(fish=phi) = 0
+P(to=inf) = 0
+P(mark=phi) = 0
+P(mark=prep) = 0
+P(for=prep) = 0
+P(fish=noun) = 0
+P(for=verb) = 0
+P(likes=phi) = 0
+P(to=verb) = 0
+P(likes=inf) = 0
+P(likes=noun) = 0
+P(for=phi) = 0
+P(for=noun) = 0
+P(mark=noun) = -3.79585928322
+P(to=noun) = 0
+P(likes=prep) = 0
+P(mark=verb) = -7.38082178394
+P(fish=inf) = 0
+P(fish=verb) = 0
+P(for=inf) = 0
+P(to=phi) = 0
+P(likes=verb) = 0
