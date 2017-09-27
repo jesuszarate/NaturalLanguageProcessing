@@ -7,10 +7,8 @@ from pathlib import Path
 class viterbi():
 
     def __init__(self, transitionPr, emissionPr, tags, words):
-        #self.words = ['fish', 'to', 'bears', 'mark']
-        #self.words = ['fish', 'bears']
+        self.default_val = 0.0001
         self.words = words
-        #self.tags = ['noun', 'verb', 'inf', 'prep', 'phi']
         self.tags = tags
 
         self.W = len(self.words)
@@ -69,25 +67,24 @@ class viterbi():
     def getScore(self, item1, item2):
         if (item1, item2) in self.Scores:
             return self.Scores[(item1, item2)]
-        return 0
+        return self.default_val
 
     def transitionProb(self, word, tag):
         if (word, tag) in self.transitionPr:
             return self.transitionPr[(word, tag)]
-        return 0
+        return self.default_val
 
     def emissionProb(self, tag1, tag2):
         if (tag1, tag2) in self.emissionPr:
             return self.emissionPr[tag1, tag2]
-        return 0
+        return self.default_val
 
 class forward():
 
     def __init__(self, transitionPr, emissionPr, tags, words):
-        #self.words = ['fish', 'to', 'bears', 'mark']
-        #self.words = ['fish', 'bears']
+        self.default_val = 0.0001
+
         self.words = words
-        #self.tags = ['noun', 'verb', 'inf', 'prep', 'phi']
         self.tags = tags
 
         self.W = len(self.words)
@@ -95,8 +92,6 @@ class forward():
 
         self.transitionPr = transitionPr
         self.emissionPr = emissionPr
-        #self.Scores = dict()
-        #self.BackPtr = dict()
 
         self.seqSum = dict()
 
@@ -117,10 +112,11 @@ class forward():
         for w in range(0, self.W):
             for t in range(0, self.T):
                 Sum = self.getSum(w)
-                if Sum != 0:
-                    probs[(self.words[w], self.tags[t])] = self.getSeqSum(self.tags[t], self.words[w]) / Sum
-                else:
-                    probs[(self.words[w], self.tags[t])] = 0
+                Sum = Sum if Sum != 0 else self.default_val
+                #if Sum != 0:
+                probs[(self.words[w], self.tags[t])] = round(self.getSeqSum(self.tags[t], self.words[w]) / Sum, 4)
+                #else:
+                #    probs[(self.words[w], self.tags[t])] = 0
         return probs
 
     def getSum(self, w):
@@ -132,14 +128,14 @@ class forward():
     def transitionProb(self, word, tag):
         if (word, tag) in self.transitionPr:
             return self.transitionPr[(word, tag)]
-        return 0
+        return self.default_val
 
     def emissionProb(self, tag1, tag2):
         if (tag1, tag2) in self.emissionPr:
             return self.emissionPr[tag1, tag2]
-        return 0
+        return self.default_val
 
-    def getProbSum(self, tag_t, word):
+    def getProbSum(self, word, tag_t):
         Sum = 0
         for j in range(0, self.T):
             Sum += self.getSeqSum(self.tags[j], word) * self.emissionProb(tag_t, self.tags[j])
@@ -148,7 +144,7 @@ class forward():
     def getSeqSum(self, tag, word):
         if (tag, word) in self.seqSum:
             return self.seqSum[(tag, word)]
-        return 0
+        return self.default_val
 
 
 
@@ -207,10 +203,6 @@ def main(argv):
 
     tags = ['noun', 'verb', 'inf', 'prep', 'phi']
     for sentence in lines:
-        #tags = ['noun', 'verb', 'adv']
-
-        #words = ['learning', 'changes', 'thoroughly']
-        #words = ['bears', 'fish']
         words = sentence.strip().split()
         probs = readProbs(probabilities_file, tags)
 
@@ -219,16 +211,33 @@ def main(argv):
 
         print ("PROCESSING SENTENCE: {0}".format(sentence))
 
-        for s, v in scores.items():
-            val = 0 if v == 0 else str(log(v, 2))
-            print("P({0}={1}) = {2}".format(s[1], s[0], val))
+        p_tags = ['noun', 'verb', 'inf', 'prep']
+
+        print ('FINAL VITERBI NETWORK')
+        for w in words:
+            for t in p_tags:
+                v = scores[(t, w)]
+                val = 0 if v == 0 else round(log(v, 2), 4)
+                print("P({0}={1}) = {2:.4f}".format(w, t, val))
         print
 
+
+        print ('FINAL BACKPTR NETWORK')
+        print
+
+        print ('BEST TAG SEQUENCE HAS LOG PROBABILITY = {0}'.format(1))
+        print
+
+        print ('FORWARD ALGORITHM RESULTS')
         f_alg = forward(probs[0], probs[1], tags, words)
         f_alg.computeForwardProbs()
         ps = f_alg.computeLexicalProbs()
 
-        print ps
+        for w in words:
+            for t in p_tags:
+                print('P({0}={1}) = {2:.4f}'.format(w, t, ps[(w, t)]))
+
+        print
 
 
 if __name__ == "__main__":
