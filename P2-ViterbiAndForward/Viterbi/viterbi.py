@@ -4,8 +4,8 @@ import sys, getopt
 import numpy as np
 from pathlib import Path
 
-class viterbi():
 
+class viterbi():
     def __init__(self, transitionPr, emissionPr, tags, words):
         self.default_val = 0.0001
         self.words = words
@@ -23,24 +23,36 @@ class viterbi():
 
         for t in range(0, self.T):
             word = self.transitionProb(self.words[0], self.tags[t])
-            tag = self.emissionProb (self.tags[t], 'phi')
+            tag = self.emissionProb(self.tags[t], 'phi')
             self.Scores[(self.tags[t], self.words[0])] = word * tag
-        self.BackPtr[(self.tags[0], self.words[0])] = 0
+        self.BackPtr[(self.tags[self.T - 1], self.words[0])] = 0
 
         for w in range(1, self.W):
             for t in range(0, self.T):
-                k, max_k = self.getMax(self.words[w-1], self.tags[t])
+                k, max_k = self.getMax(self.words[w - 1], self.tags[t])
 
                 self.Scores[(self.tags[t], self.words[w])] = self.transitionProb(self.words[w], self.tags[t]) * max_k
-                self.BackPtr[(self.tags[t], w)] = k
+                self.BackPtr[(self.tags[t], self.words[w])] = k
 
-        #print self.Scores
-        Seq = dict()
-        Seq[self.W - 1] = self.getMax_t(self.words[self.W - 1])
-        for w in range(self.W-2, 0):
-            Seq[w] = self.BackPtr[(Seq[w+1], w + 1)]
+        return self.Scores
 
-        return self.Scores, Seq
+    def computeSeq(self):
+        # print self.Scores
+        Seq = []#[0] * len(self.BackPtr)
+        #best_tag, Seq[self.words[self.W - 1]] = self.getMax_t(self.words[self.W - 1])
+        best_tag, max_t = self.getMax_t(self.words[self.W - 1])
+        Seq.append((self.words[self.W-1], max_t))
+        pos = 0
+        for w in xrange(self.W - 1, 0, -1):
+            #Seq[self.words[w-1]] = self.getBackPointer(Seq, w)
+            Seq.append((self.words[w-1], self.getBackPointer(Seq[pos], w)))
+            pos+=1
+
+        return log(best_tag, 2), Seq
+
+    def getBackPointer(self, prvSeq, w):
+        ptr = self.BackPtr[(prvSeq[1],self.words[w])]
+        return self.tags[ptr]
 
     def getMax_t(self, W):
         mx = -float('infinity')
@@ -50,7 +62,7 @@ class viterbi():
             if mx < tmp:
                 mx = tmp
                 max_t = t
-        return max_t
+        return mx, self.tags[max_t]
 
     def getMax(self, word, tag_t):
         mx = -float("infinity")
@@ -79,8 +91,8 @@ class viterbi():
             return self.emissionPr[tag1, tag2]
         return self.default_val
 
-class forward():
 
+class forward():
     def __init__(self, transitionPr, emissionPr, tags, words):
         self.default_val = 0.0001
 
@@ -104,7 +116,7 @@ class forward():
         for w in range(1, self.W):
             for t in range(0, self.T):
                 self.seqSum[(self.tags[t], self.words[w])] = self.transitionProb(self.words[w], self.tags[t]) * \
-                    self.getProbSum(self.words[w - 1], self.tags[t])
+                                                             self.getProbSum(self.words[w - 1], self.tags[t])
 
     def computeLexicalProbs(self):
 
@@ -113,9 +125,9 @@ class forward():
             for t in range(0, self.T):
                 Sum = self.getSum(w)
                 Sum = Sum if Sum != 0 else self.default_val
-                #if Sum != 0:
+                # if Sum != 0:
                 probs[(self.words[w], self.tags[t])] = round(self.getSeqSum(self.tags[t], self.words[w]) / Sum, 4)
-                #else:
+                # else:
                 #    probs[(self.words[w], self.tags[t])] = 0
         return probs
 
@@ -147,7 +159,6 @@ class forward():
         return self.default_val
 
 
-
 def readProbs(probabilities_file, tags):
     transitions = dict()
     emmissions = dict()
@@ -160,6 +171,7 @@ def readProbs(probabilities_file, tags):
                 transitions[(lineSplit[0], lineSplit[1])] = float(lineSplit[2])
     return transitions, emmissions
 
+
 def readSentence(file_name):
     lines = []
     with open(file_name, 'r') as file:
@@ -167,11 +179,13 @@ def readSentence(file_name):
             lines.append(line)
     return lines
 
+
 def does_file_exist(filename):
     file = Path(filename)
     if file.is_file():
         return True
     return False
+
 
 def genereate_trace_file(type, data, extension='trace'):
     with open('ngrams{0}.{1}'.format(type, extension), 'w') as of:
@@ -179,10 +193,9 @@ def genereate_trace_file(type, data, extension='trace'):
             of.write(line + '\n')
 
 
-#def print_results():
+# def print_results():
 
 def main(argv):
-
     if not len(argv) == 2:
         print('python viterbi.py <probabilities file> <sentences file>')
         sys.exit(2)
@@ -199,15 +212,16 @@ def main(argv):
     sentence_file = argv[1]
 
     lines = readSentence(sentence_file)
-    #sentence
+    # sentence
 
     tags = ['noun', 'verb', 'inf', 'prep', 'phi']
     for sentence in lines:
         words = sentence.strip().split()
         probs = readProbs(probabilities_file, tags)
 
-        v = viterbi(probs[0], probs[1], tags, words)
-        scores, seq = v.compute()
+        vit = viterbi(probs[0], probs[1], tags, words)
+        scores = vit.compute()
+        best_tag, seq = vit.computeSeq()
 
         print ("PROCESSING SENTENCE: {0}".format(sentence))
 
@@ -219,13 +233,24 @@ def main(argv):
                 v = scores[(t, w)]
                 val = 0 if v == 0 else round(log(v, 2), 4)
                 print("P({0}={1}) = {2:.4f}".format(w, t, val))
+        # print('\n')
         print
-
 
         print ('FINAL BACKPTR NETWORK')
+
+        for w in words:
+            for t in p_tags:
+                if (t, w) in vit.BackPtr:
+                    val = vit.tags[vit.BackPtr[(t, w)]]
+                    #val = 0 if v == 0 else round(log(v, 2), 4)
+                    print("P({0}={1}) = {2}".format(w, t, val))
         print
 
-        print ('BEST TAG SEQUENCE HAS LOG PROBABILITY = {0}'.format(1))
+        print ('BEST TAG SEQUENCE HAS LOG PROBABILITY = {0:.4f}'.format(best_tag))
+        # for w in words:
+        #     for t in p_tags:
+        for val in seq:
+                print ('{0}->{1}'.format(val[0], val[1]))
         print
 
         print ('FORWARD ALGORITHM RESULTS')
@@ -237,6 +262,7 @@ def main(argv):
             for t in p_tags:
                 print('P({0}={1}) = {2:.4f}'.format(w, t, ps[(w, t)]))
 
+        # print('\n')
         print
 
 

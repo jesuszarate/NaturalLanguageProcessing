@@ -1,58 +1,162 @@
 PROCESSING SENTENCE: bears fish
 
-P(bears=verb) = -8.96578428466
-P(fish=noun) = -12.9867101235
-P(bears=prep) = 0
-P(bears=noun) = -5.96578428466
-P(bears=phi) = 0
-P(fish=prep) = 0
-P(fish=phi) = 0
-P(bears=inf) = 0
-P(fish=inf) = 0
-P(fish=verb) = -10.4237739291
+FINAL VITERBI NETWORK
+P(bears=noun) = -5.9658
+P(bears=verb) = -8.9658
+P(bears=inf) = -26.5754
+P(bears=prep) = -26.5754
+P(fish=noun) = -12.9867
+P(fish=verb) = -10.4238
+P(fish=inf) = -24.4379
+P(fish=prep) = -20.9905
+
+FINAL BACKPTR NETWORK
+P(fish=noun) = verb
+P(fish=verb) = noun
+P(fish=inf) = verb
+P(fish=prep) = noun
+
+BEST TAG SEQUENCE HAS LOG PROBABILITY = -10.4238
+fish->verb
+bears->noun
+
+FORWARD ALGORITHM RESULTS
+P(bears=noun) = 0.8889
+P(bears=verb) = 0.1111
+P(bears=inf) = 0.0000
+P(bears=prep) = 0.0000
+P(fish=noun) = 0.1448
+P(fish=verb) = 0.8546
+P(fish=inf) = 0.0001
+P(fish=prep) = 0.0006
 
 PROCESSING SENTENCE: mark has fish
 
-P(mark=inf) = 0
-P(fish=noun) = -13.4971671879
-P(has=inf) = 0
-P(mark=noun) = -3.79585928322
-P(fish=prep) = 0
-P(has=verb) = -9.47624134902
-P(has=noun) = 0
-P(fish=phi) = 0
-P(mark=verb) = -7.38082178394
-P(fish=inf) = 0
-P(mark=phi) = 0
-P(fish=verb) = 0
-P(mark=prep) = 0
-P(has=phi) = 0
-P(has=prep) = 0
+FINAL VITERBI NETWORK
+P(mark=noun) = -3.7959
+P(mark=verb) = -7.3808
+P(mark=inf) = -26.5754
+P(mark=prep) = -26.5754
+P(has=noun) = -21.0456
+P(has=verb) = -9.4762
+P(has=inf) = -22.8530
+P(has=prep) = -18.8205
+P(fish=noun) = -13.4972
+P(fish=verb) = -25.5036
+P(fish=inf) = -24.9484
+P(fish=prep) = -24.7640
+
+FINAL BACKPTR NETWORK
+P(has=noun) = verb
+P(has=verb) = noun
+P(has=inf) = verb
+P(has=prep) = noun
+P(fish=noun) = verb
+P(fish=verb) = noun
+P(fish=inf) = verb
+P(fish=prep) = verb
+
+BEST TAG SEQUENCE HAS LOG PROBABILITY = -13.4972
+fish->noun
+has->verb
+mark->noun
+
+FORWARD ALGORITHM RESULTS
+P(mark=noun) = 0.9231
+P(mark=verb) = 0.0769
+P(mark=inf) = 0.0000
+P(mark=prep) = 0.0000
+P(has=noun) = 0.0003
+P(has=verb) = 0.9979
+P(has=inf) = 0.0001
+P(has=prep) = 0.0016
+P(fish=noun) = 0.9988
+P(fish=verb) = 0.0004
+P(fish=inf) = 0.0004
+P(fish=prep) = 0.0004
 
 PROCESSING SENTENCE: mark likes to fish for fish
 
-P(mark=inf) = 0
-P(to=prep) = 0
-P(fish=prep) = 0
-P(fish=phi) = 0
-P(to=inf) = 0
-P(mark=phi) = 0
-P(mark=prep) = 0
-P(for=prep) = 0
-P(fish=noun) = 0
-P(for=verb) = 0
-P(likes=phi) = 0
-P(to=verb) = 0
-P(likes=inf) = 0
-P(likes=noun) = 0
-P(for=phi) = 0
-P(for=noun) = 0
-P(mark=noun) = -3.79585928322
-P(to=noun) = 0
-P(likes=prep) = 0
-P(mark=verb) = -7.38082178394
-P(fish=inf) = 0
-P(fish=verb) = 0
-P(for=inf) = 0
-P(to=phi) = 0
-P(likes=verb) = 0
+FINAL VITERBI NETWORK
+P(mark=noun) = -3.7959
+P(mark=verb) = -7.3808
+P(mark=inf) = -26.5754
+P(mark=prep) = -26.5754
+P(likes=noun) = -21.0456
+P(likes=verb) = -17.7051
+P(likes=inf) = -22.8530
+P(likes=prep) = -18.8205
+P(to=noun) = -31.3698
+P(to=verb) = -34.9548
+P(to=inf) = -19.9040
+P(to=prep) = -21.3045
+P(fish=noun) = -32.1541
+P(fish=verb) = -42.2783
+P(fish=inf) = -54.5642
+P(fish=prep) = -52.8450
+P(for=noun) = -37.8203
+P(for=verb) = -39.0920
+P(for=inf) = -39.6277
+P(for=prep) = -28.2758
+P(fish=noun) = -32.1541
+P(fish=verb) = -42.2783
+P(fish=inf) = -54.5642
+P(fish=prep) = -52.8450
+
+FINAL BACKPTR NETWORK
+P(likes=noun) = verb
+P(likes=verb) = noun
+P(likes=inf) = verb
+P(likes=prep) = noun
+P(to=noun) = verb
+P(to=verb) = noun
+P(to=inf) = verb
+P(to=prep) = verb
+P(fish=noun) = prep
+P(fish=verb) = noun
+P(fish=inf) = verb
+P(fish=prep) = noun
+P(for=noun) = verb
+P(for=verb) = noun
+P(for=inf) = verb
+P(for=prep) = verb
+P(fish=noun) = prep
+P(fish=verb) = noun
+P(fish=inf) = verb
+P(fish=prep) = noun
+
+BEST TAG SEQUENCE HAS LOG PROBABILITY = -32.1541
+fish->noun
+for->prep
+fish->verb
+to->noun
+likes->verb
+mark->noun
+
+FORWARD ALGORITHM RESULTS
+P(mark=noun) = 0.9231
+P(mark=verb) = 0.0769
+P(mark=inf) = 0.0000
+P(mark=prep) = 0.0000
+P(likes=noun) = 0.0610
+P(likes=verb) = 0.6169
+P(likes=inf) = 0.0175
+P(likes=prep) = 0.3045
+P(to=noun) = 0.0004
+P(to=verb) = 0.0000
+P(to=inf) = 0.7021
+P(to=prep) = 0.2975
+P(fish=noun) = 0.9992
+P(fish=verb) = 0.0008
+P(fish=inf) = 0.0000
+P(fish=prep) = 0.0000
+P(for=noun) = 0.0008
+P(for=verb) = 0.0004
+P(for=inf) = 0.0002
+P(for=prep) = 0.9986
+P(fish=noun) = 0.9992
+P(fish=verb) = 0.0008
+P(fish=inf) = 0.0000
+P(fish=prep) = 0.0000
+
+
