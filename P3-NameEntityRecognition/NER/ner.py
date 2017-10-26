@@ -7,6 +7,7 @@ import re
 class ner:
     def __init__(self, trainFileName, testFileName, locationsFileName):
 
+
         self.UNK = 'UNK'
         self.UNKPOS = 'UNKPOS'
         self.PI = 'PHI'
@@ -19,6 +20,7 @@ class ner:
         self.testSentences = self.getSentences(testFileName, False)
         self.locationFileName = locationsFileName
         self.locations = None
+        self.featureVectors = None
 
         self.options = {'WORD': self.word,
                         'WORDCON': self.wordcon,
@@ -125,28 +127,37 @@ class ner:
             features.append(feature)
         return features
 
-    def generateFeatures(self, sentences, ftypes):
+    def generateReadableFeatures(self, sentences, ftypes):
         features = []
         for sentence in sentences:
             features.append(self.generateSentenceFeatures(sentence, ftypes))
         return features
 
     #Feature Vector
-    def generateFeatureVectors(self):
+
+    def getFeatures(self):
+        if self.featureVectors == None:
+            self.generateFeatures()
+        return self.featureVectors
+
+    def generateFeatures(self):
 
         id = 1
-        features = dict()
+        self.featureVectors = dict()
         for word in self.setOfWords:
-            features['word-{0}'.format(word)] = id
+            self.featureVectors['word-{0}'.format(word)] = id
             id += 1
 
+        self.featureVectors['word-{0}'.format(self.UNK)] = id
+
+        id += 1
         for pos in self.setOfPOS:
-            features['pos-{0}'.format(pos)] = id
-            id += 1
-            features['prev-pos-{0}'.format(pos)] = id
-            id += 1
-            features['next-pos-{0}'.format(pos)] = id
-            id += 1
+            id = self.POSFormat(pos, id, self.featureVectors)
+
+        id = self.POSFormat(self.PIPOS, id, self.featureVectors)
+        id = self.POSFormat(self.OMEGAPOS, id, self.featureVectors)
+        id = self.POSFormat(self.UNKPOS, id, self.featureVectors)
+        self.featureVectors['capitalized'] = id
 
     def fillDefaults(self, feature):
         for k, val in feature.items():
@@ -165,7 +176,15 @@ class ner:
             'LOCATION': ''}
         return featureTemplate
 
+    def POSFormat(self, pos, id, features):
+        features['pos-{0}'.format(pos)] = id
+        id += 1
+        features['prev-pos-{0}'.format(pos)] = id
+        id += 1
+        features['next-pos-{0}'.format(pos)] = id
+        id += 1
 
+        return id
 
 
 def does_file_exist(filename):
@@ -215,12 +234,14 @@ def main(argv):
 
     #testSentences = NER.getSentences(getFileFormat(argv[1]))
 
-    WORD = NER.generateFeatures(NER.trainSentences, ftypes)
-    TEST = NER.generateFeatures(NER.testSentences, ftypes)
+    readableTestFeatures = NER.generateReadableFeatures(NER.trainSentences, ftypes)
+    readableTestFeatures = NER.generateReadableFeatures(NER.testSentences, ftypes)
 
-    WORDVEC = NER.generateFeatureVectors(NER.trainSentences, ftypes)
+    WORDVEC = NER.getFeatures()
 
-    genereate_trace_file(WORD, argv[0], 'readable', 'ALL')
+    #NER.getFeatureVector(NER.trainSentences)
+
+    genereate_trace_file(readableTestFeatures, argv[0], 'readable', 'ALL')
     #genereate_trace_file(TEST, argv[1], 'readable', 'WHAT')
 
     # for ftype in ftypes:
