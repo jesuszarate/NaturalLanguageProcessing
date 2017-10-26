@@ -7,7 +7,6 @@ import re
 class ner:
     def __init__(self, trainFileName, testFileName, locationsFileName):
 
-
         self.UNK = 'UNK'
         self.UNKPOS = 'UNKPOS'
         self.PI = 'PHI'
@@ -30,6 +29,14 @@ class ner:
                         'CAP': self.cap,
                         'LOCATION': self.location
                         }
+        self.optionsVec = {'WORD': self.wordVec,
+                           'WORDCON': self.wordconVec,
+                           'POS': self.posVec,
+                           'POSCON': self.posconVec,
+                           'ABBR': self.abbrVec,
+                           'CAP': self.capVec,
+                           'LOCATION': self.locationVec
+                           }
 
     def getLocations(self, locationsFileName):
         self.locations = set()
@@ -49,6 +56,10 @@ class ner:
                     sentence = ''
                     continue
                 sentence += line
+
+            parsedSentence = self.parseSentences(sentence, isTrainFile)
+            if len(parsedSentence) > 0:
+                sentences.append(parsedSentence)
         return sentences
 
     def parseSentences(self, sentence, isTrainFile):
@@ -77,7 +88,7 @@ class ner:
             wordcon += ' ' + sentence[wordPos + 1]['word']
         else:
             wordcon += ' ' + self.OMEGA
-        return  wordcon
+        return wordcon
 
     def abbr(self, wordPos, sentence):
         word = sentence[wordPos]
@@ -97,7 +108,7 @@ class ner:
     def location(self, wordPos, sentence):
         if self.locations == None or len(self.locations) <= 0:
             self.getLocations(self.locationFileName)
-        containLoc =  sentence[wordPos]['word'] in self.locations
+        containLoc = sentence[wordPos]['word'] in self.locations
         return 'yes' if containLoc else 'no'
 
     def pos(self, wordPos, sentence):
@@ -113,7 +124,7 @@ class ner:
             poscon += ' ' + sentence[wordPos + 1]['pos']
         else:
             poscon += ' ' + self.OMEGAPOS
-        return  poscon
+        return poscon
 
     def generateSentenceFeatures(self, sentence, ftypes):
         features = []
@@ -133,38 +144,138 @@ class ner:
             features.append(self.generateSentenceFeatures(sentence, ftypes))
         return features
 
-    #Feature Vector
+    # Feature Vector
 
-    def getFeatures(self):
+    def getFeatures(self, ftypes):
         if self.featureVectors == None:
-            self.generateFeatures()
+            self.generateFeatures(ftypes)
         return self.featureVectors
 
-    def generateFeatures(self):
-
+    def generateFeatures(self, ftypes):
         id = 1
         self.featureVectors = dict()
+
+        # self.setOfWords.add(self.PI)
+        # self.setOfWords.add(self.OMEGA)
+        self.setOfWords.add(self.UNK)
         for word in self.setOfWords:
-            self.featureVectors['word-{0}'.format(word)] = id
+            for ftype in ftypes:
+                if ftype == 'WORD' or ftype == 'WORDCON':
+                    id = self.WORDFormat(word, id, self.featureVectors, ftype, 'word')
+
+        self.setOfPOS.add(self.PIPOS)
+        self.setOfPOS.add(self.OMEGAPOS)
+        self.setOfPOS.add(self.UNKPOS)
+        for pos in self.setOfPOS:
+            for ftype in ftypes:
+
+                if ftype == 'POS' or ftype == 'POSCON':
+                    id = self.WORDFormat(pos, id, self.featureVectors, ftype, 'pos')
+
+        if 'CAP' in ftypes:
+            self.featureVectors['capitalized'] = id
+            id += 1
+        if 'LOCATION' in ftypes:
+            self.featureVectors['location'] = id
+            id += 1
+        if 'ABBR' in ftypes:
+            self.featureVectors['abbreviations'] = id
             id += 1
 
-        self.featureVectors['word-{0}'.format(self.UNK)] = id
+    def getFeatureVectors(self, sentences, ftypes):
+        features = []
+        for sentence in sentences:
+            features.append(self.generateVectorFeature(sentence, ftypes))
+        return features
 
-        id += 1
-        for pos in self.setOfPOS:
-            id = self.POSFormat(pos, id, self.featureVectors)
+    def generateVectorFeature(self, sentence, ftypes):
+        features = []
+        # Loop through every word first
+        for wordPos in range(0, len(sentence)):
+            indFeatures = []
+            for type in ftypes:
+                res = self.optionsVec[type](wordPos, sentence)
+                if isinstance(res, list):
+                    indFeatures.extend(res)
+                else:
+                    indFeatures.append(res)
 
-        id = self.POSFormat(self.PIPOS, id, self.featureVectors)
-        id = self.POSFormat(self.OMEGAPOS, id, self.featureVectors)
-        id = self.POSFormat(self.UNKPOS, id, self.featureVectors)
-        self.featureVectors['capitalized'] = id
+            feature = {sentence[wordPos]['word']: (sentence[wordPos]['label'], indFeatures)}
+            features.append(feature)
+        return features
+
+    def wordVec(self, wordPos, sentence):
+        word = 'word-{0}'.format(sentence[wordPos]['word'])
+
+        if word in self.featureVectors:
+            return '{0}:{1}'.format(self.featureVectors[word], 1)
+
+    def wordconVec(self, wordPos, sentence):
+        #TODO: Check to make sure this works
+        prevword = 'prev-word-{0}'.format(self.getWord(wordPos-1, sentence['word'], 'word'))
+        nextword = 'next-word-{0}'.format(self.getWord(wordPos+1, sentence['word'], 'word'))
+        #nextword = 'next-word-{0}'.format(sentence[wordPos]['word'])
+
+        return [prevword, nextword]
+        # if word in self.featureVectors:
+        #     return '{0}:{1}'.format(self.featureVectors[word], 1)
+
+    def abbrVec(self, wordPos, sentence):
+        word = sentence[wordPos]
+
+        alphaNumPeriod = re.compile('^[a-zA-Z0-9_(\.)+]*$')
+
+        if str.endswith(word['word'], '.') and \
+                alphaNumPeriod.match(word['word']) and \
+                        len(word['word']) <= 4:
+            return 'yes'
+        else:
+            return 'no'
+
+    def capVec(self, wordPos, sentence):
+        return 'yes' if sentence[wordPos]['word'][0].isupper() else 'no'
+
+    def locationVec(self, wordPos, sentence):
+        if self.locations == None or len(self.locations) <= 0:
+            self.getLocations(self.locationFileName)
+        containLoc = sentence[wordPos]['word'] in self.locations
+        return 'yes' if containLoc else 'no'
+
+    def posVec(self, wordPos, sentence):
+        word = sentence[wordPos]
+        return word['pos'] if word['pos'] in self.setOfPOS else self.UNKPOS
+
+    def posconVec(self, wordPos, sentence):
+        poscon = self.PIPOS
+
+        if wordPos > 0:
+            poscon = sentence[wordPos - 1]['pos']
+        if wordPos + 1 < len(sentence):
+            poscon += ' ' + sentence[wordPos + 1]['pos']
+        else:
+            poscon += ' ' + self.OMEGAPOS
+        return poscon
+
+    # Helpers
+    def getWord(self, wordPos, sentence, type):
+
+        if wordPos < 0:
+            if type == 'word':
+                return self.PI
+            elif type == 'pos':
+                return self.PIPOS
+        if wordPos > len(sentence):
+            if type == 'word':
+                return self.OMEGA
+            elif type == 'pos':
+                return self.OMEGAPOS
+        return sentence[wordPos]
 
     def fillDefaults(self, feature):
         for k, val in feature.items():
             if val == '':
                 feature[k] = 'n/a'
 
-    # Helpers
     def featureTemplate(self):
         featureTemplate = {
             'WORD': '',
@@ -175,6 +286,20 @@ class ner:
             'CAP': '',
             'LOCATION': ''}
         return featureTemplate
+
+    def WORDFormat(self, word, id, features, type, tag):
+
+        if type == 'WORDCON' or type == 'POSCON':
+            if word != self.OMEGAPOS:
+                features['prev-{0}-{1}'.format(tag, word)] = id
+                id += 1
+            if word != self.PIPOS:
+                features['next-{0}-{1}'.format(tag, word)] = id
+                id += 1
+        elif word != self.PIPOS and word != self.OMEGAPOS:
+            features['{0}-{1}'.format(tag, word)] = id
+            id += 1
+        return id
 
     def POSFormat(self, pos, id, features):
         features['pos-{0}'.format(pos)] = id
@@ -232,21 +357,23 @@ def main(argv):
 
     NER = ner(getFileFormat(argv[0]), getFileFormat(argv[1]), getFileFormat(argv[2]))
 
-    #testSentences = NER.getSentences(getFileFormat(argv[1]))
+    # testSentences = NER.getSentences(getFileFormat(argv[1]))
 
-    readableTestFeatures = NER.generateReadableFeatures(NER.trainSentences, ftypes)
-    readableTestFeatures = NER.generateReadableFeatures(NER.testSentences, ftypes)
+    readableTrainFeatures = NER.generateReadableFeatures(NER.trainSentences, ftypes)
+    # readableTestFeatures = NER.generateReadableFeatures(NER.testSentences, ftypes)
 
-    WORDVEC = NER.getFeatures()
+    WORDVEC = NER.getFeatures(ftypes)
 
-    #NER.getFeatureVector(NER.trainSentences)
+    NER.getFeatureVectors(NER.trainSentences, ftypes)
 
-    genereate_trace_file(readableTestFeatures, argv[0], 'readable', 'ALL')
-    #genereate_trace_file(TEST, argv[1], 'readable', 'WHAT')
+    # genereate_trace_file(readableTestFeatures, argv[0], 'readable', 'ALL')
+
+    # genereate_trace_file(TEST, argv[1], 'readable', 'WHAT')
 
     # for ftype in ftypes:
     #     genereate_trace_file(WORD, argv[0], 'readable', ftype)
     #     genereate_trace_file(TEST, argv[1], 'readable', ftype)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

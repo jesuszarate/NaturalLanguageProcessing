@@ -1,0 +1,10 @@
+B-LOC NNP Israel
+O NN television
+O VBD rejected
+O DT the
+O NN skit
+O IN by
+O DT the
+O NN comedian
+B-PER NNP Tuvia
+I-PER NNP Tzafir
