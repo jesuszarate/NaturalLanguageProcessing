@@ -345,6 +345,7 @@ class ner:
                     tempList.extend(sorted(vec[1], key=self.featComperator))
                     flattenedList.append(tempList)
         return flattenedList
+
     def featComperator(self, feat):
         return feat[0]
 
@@ -368,6 +369,23 @@ def genereate_trace_file(data, name, type, extension=''):
                 for k, v in line.items():
                     of.write('{0}: {1}\n'.format(k, v))
                 of.write('\n')
+
+
+def writeFeatureVectorsToFile(flattenFeatVec, name, type, extension=''):
+
+    extension = extension if extension == '' else '.' + extension
+    with open('OutputFiles/{0}.{1}{2}'.format(name, type, extension), 'w') as of:
+
+        for line in flattenFeatVec:
+            of.write('{0} '.format(line[0]))
+
+            for i in range(1, len(line) - 1):
+                entry = line[i]
+                of.write('{0}:{1} '.format(entry[0], entry[1]))
+            entry = line[len(line) - 1]
+            of.write('{0}:{1} '.format(entry[0], entry[1]))
+            of.write('\n')
+
 
 
 def main(argv):
@@ -404,6 +422,7 @@ def main(argv):
 
     flattenFeatVec = NER.flattenFeatureVectors(featVec)
 
+    writeFeatureVectorsToFile(flattenFeatVec, argv[0], 'vector')
 
     print('hello')
     # genereate_trace_file(readableTestFeatures, argv[0], 'readable', 'ALL')
