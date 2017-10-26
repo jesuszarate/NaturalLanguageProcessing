@@ -37,6 +37,15 @@ class ner:
                            'CAP': self.capVec,
                            'LOCATION': self.locationVec
                            }
+        self.BIO_LABELS = {
+            'O': 0,
+            'B-PER': 1,
+            'I-PER': 2,
+            'B-LOC': 3,
+            'I-LOC': 4,
+            'B-ORG': 5,
+            'I-ORG': 6
+        }
 
     def getLocations(self, locationsFileName):
         self.locations = set()
@@ -200,7 +209,9 @@ class ner:
                 else:
                     indFeatures.append(res)
 
-            feature = {sentence[wordPos]['word']: (sentence[wordPos]['label'], indFeatures)}
+            labelCode = self.BIO_LABELS[sentence[wordPos]['label']]
+            #feature = {sentence[wordPos]['word']: (sentence[wordPos]['label'], indFeatures)}
+            feature = {sentence[wordPos]['word']: (labelCode, indFeatures)}
             features.append(feature)
         return features
 
@@ -211,50 +222,47 @@ class ner:
             return '{0}:{1}'.format(self.featureVectors[word], 1)
 
     def wordconVec(self, wordPos, sentence):
-        #TODO: Check to make sure this works
-        prevword = 'prev-word-{0}'.format(self.getWord(wordPos-1, sentence['word'], 'word'))
-        nextword = 'next-word-{0}'.format(self.getWord(wordPos+1, sentence['word'], 'word'))
-        #nextword = 'next-word-{0}'.format(sentence[wordPos]['word'])
+        prevword = 'prev-word-{0}'.format(self.getWord(wordPos-1, sentence, 'word'))
+        nextword = 'next-word-{0}'.format(self.getWord(wordPos+1, sentence, 'word'))
 
-        return [prevword, nextword]
-        # if word in self.featureVectors:
-        #     return '{0}:{1}'.format(self.featureVectors[word], 1)
+        conList = list()
+        if prevword in self.featureVectors:
+            conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
+        if nextword in self.featureVectors:
+            conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
+        return conList
 
     def abbrVec(self, wordPos, sentence):
-        word = sentence[wordPos]
-
-        alphaNumPeriod = re.compile('^[a-zA-Z0-9_(\.)+]*$')
-
-        if str.endswith(word['word'], '.') and \
-                alphaNumPeriod.match(word['word']) and \
-                        len(word['word']) <= 4:
-            return 'yes'
-        else:
-            return 'no'
+        #TODO: IMPLEMENT
+        pass
 
     def capVec(self, wordPos, sentence):
-        return 'yes' if sentence[wordPos]['word'][0].isupper() else 'no'
+        word = 'capitalized' if sentence[wordPos]['word'][0].isupper() else ''
+
+        if word in self.featureVectors:
+            return '{0}:{1}'.format(self.featureVectors[word], 1)
 
     def locationVec(self, wordPos, sentence):
-        if self.locations == None or len(self.locations) <= 0:
-            self.getLocations(self.locationFileName)
-        containLoc = sentence[wordPos]['word'] in self.locations
-        return 'yes' if containLoc else 'no'
+        #TODO: IMPLEMENT
+        pass
 
     def posVec(self, wordPos, sentence):
-        word = sentence[wordPos]
-        return word['pos'] if word['pos'] in self.setOfPOS else self.UNKPOS
+        word = 'pos-{0}'.format(sentence[wordPos]['pos'])
+
+        if word in self.featureVectors:
+            return '{0}:{1}'.format(self.featureVectors[word], 1)
 
     def posconVec(self, wordPos, sentence):
-        poscon = self.PIPOS
+        #TODO: IMPLEMENT
+        prevword = 'prev-pos-{0}'.format(self.getWord(wordPos-1, sentence, 'pos'))
+        nextword = 'next-pos-{0}'.format(self.getWord(wordPos+1, sentence, 'pos'))
 
-        if wordPos > 0:
-            poscon = sentence[wordPos - 1]['pos']
-        if wordPos + 1 < len(sentence):
-            poscon += ' ' + sentence[wordPos + 1]['pos']
-        else:
-            poscon += ' ' + self.OMEGAPOS
-        return poscon
+        conList = list()
+        if prevword in self.featureVectors:
+            conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
+        if nextword in self.featureVectors:
+            conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
+        return conList
 
     # Helpers
     def getWord(self, wordPos, sentence, type):
@@ -264,12 +272,12 @@ class ner:
                 return self.PI
             elif type == 'pos':
                 return self.PIPOS
-        if wordPos > len(sentence):
+        if wordPos >= len(sentence):
             if type == 'word':
                 return self.OMEGA
             elif type == 'pos':
                 return self.OMEGAPOS
-        return sentence[wordPos]
+        return sentence[wordPos]['pos']
 
     def fillDefaults(self, feature):
         for k, val in feature.items():
