@@ -424,7 +424,6 @@ def main(argv):
 
     writeFeatureVectorsToFile(flattenFeatVec, argv[0], 'vector')
 
-    print('hello')
     # genereate_trace_file(readableTestFeatures, argv[0], 'readable', 'ALL')
 
     # genereate_trace_file(TEST, argv[1], 'readable', 'WHAT')
