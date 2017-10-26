@@ -164,8 +164,8 @@ class ner:
         id = 1
         self.featureVectors = dict()
 
-        # self.setOfWords.add(self.PI)
-        # self.setOfWords.add(self.OMEGA)
+        self.setOfWords.add(self.PI)
+        self.setOfWords.add(self.OMEGA)
         self.setOfWords.add(self.UNK)
         for word in self.setOfWords:
             for ftype in ftypes:
@@ -206,11 +206,10 @@ class ner:
                 res = self.optionsVec[type](wordPos, sentence)
                 if isinstance(res, list):
                     indFeatures.extend(res)
-                else:
+                elif res != None:
                     indFeatures.append(res)
 
             labelCode = self.BIO_LABELS[sentence[wordPos]['label']]
-            #feature = {sentence[wordPos]['word']: (sentence[wordPos]['label'], indFeatures)}
             feature = {sentence[wordPos]['word']: (labelCode, indFeatures)}
             features.append(feature)
         return features
@@ -219,49 +218,63 @@ class ner:
         word = 'word-{0}'.format(sentence[wordPos]['word'])
 
         if word in self.featureVectors:
-            return '{0}:{1}'.format(self.featureVectors[word], 1)
+            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            return self.getFeatTuple(word)
 
     def wordconVec(self, wordPos, sentence):
-        prevword = 'prev-word-{0}'.format(self.getWord(wordPos-1, sentence, 'word'))
-        nextword = 'next-word-{0}'.format(self.getWord(wordPos+1, sentence, 'word'))
+        prevword = 'prev-word-{0}'.format(self.getWord(wordPos - 1, sentence, 'word'))
+        nextword = 'next-word-{0}'.format(self.getWord(wordPos + 1, sentence, 'word'))
 
         conList = list()
         if prevword in self.featureVectors:
-            conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
+            #conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
+            conList.append(self.getFeatTuple(prevword))
         if nextword in self.featureVectors:
-            conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
+            conList.append(self.getFeatTuple(nextword))
+            #conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
         return conList
 
     def abbrVec(self, wordPos, sentence):
-        #TODO: IMPLEMENT
-        pass
+        word = 'abbreviation' if 'yes' == self.abbr(wordPos, sentence) else ''
+
+        if word in self.featureVectors:
+            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            return self.getFeatTuple(word)
+        return None
 
     def capVec(self, wordPos, sentence):
         word = 'capitalized' if sentence[wordPos]['word'][0].isupper() else ''
 
         if word in self.featureVectors:
-            return '{0}:{1}'.format(self.featureVectors[word], 1)
+            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            return self.getFeatTuple(word)
+        return None
 
     def locationVec(self, wordPos, sentence):
-        #TODO: IMPLEMENT
-        pass
+        word = 'location' if 'yes' == self.location(wordPos, sentence) else ''
+
+        if word in self.featureVectors:
+            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            return self.getFeatTuple(word)
 
     def posVec(self, wordPos, sentence):
         word = 'pos-{0}'.format(sentence[wordPos]['pos'])
 
         if word in self.featureVectors:
-            return '{0}:{1}'.format(self.featureVectors[word], 1)
+            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            return self.getFeatTuple(word)
 
     def posconVec(self, wordPos, sentence):
-        #TODO: IMPLEMENT
-        prevword = 'prev-pos-{0}'.format(self.getWord(wordPos-1, sentence, 'pos'))
-        nextword = 'next-pos-{0}'.format(self.getWord(wordPos+1, sentence, 'pos'))
+        prevword = 'prev-pos-{0}'.format(self.getWord(wordPos - 1, sentence, 'pos'))
+        nextword = 'next-pos-{0}'.format(self.getWord(wordPos + 1, sentence, 'pos'))
 
         conList = list()
         if prevword in self.featureVectors:
-            conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
+            #conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
+            conList.append(self.getFeatTuple(prevword))
         if nextword in self.featureVectors:
-            conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
+            conList.append(self.getFeatTuple(nextword))
+            #conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
         return conList
 
     # Helpers
@@ -298,13 +311,14 @@ class ner:
     def WORDFormat(self, word, id, features, type, tag):
 
         if type == 'WORDCON' or type == 'POSCON':
-            if word != self.OMEGAPOS:
+            if word != self.OMEGAPOS and word != self.OMEGA:
                 features['prev-{0}-{1}'.format(tag, word)] = id
                 id += 1
-            if word != self.PIPOS:
+            if word != self.PIPOS and word != self.PI:
                 features['next-{0}-{1}'.format(tag, word)] = id
                 id += 1
-        elif word != self.PIPOS and word != self.OMEGAPOS:
+        elif word != self.PIPOS and word != self.OMEGAPOS and \
+                        word != self.PI and word != self.OMEGA:
             features['{0}-{1}'.format(tag, word)] = id
             id += 1
         return id
@@ -319,6 +333,20 @@ class ner:
 
         return id
 
+    def getFeatTuple(self, word):
+        return (self.featureVectors[word], 1)
+
+    def flattenFeatureVectors(self, featVecs):
+        flattenedList = list()
+        for word in featVecs:
+            for feat in word:
+                for name, vec in feat.items():
+                    tempList = [vec[0]]
+                    tempList.extend(sorted(vec[1], key=self.featComperator))
+                    flattenedList.append(tempList)
+        return flattenedList
+    def featComperator(self, feat):
+        return feat[0]
 
 def does_file_exist(filename):
     file = Path('ner-input-files/{0}'.format(filename))
@@ -372,8 +400,12 @@ def main(argv):
 
     WORDVEC = NER.getFeatures(ftypes)
 
-    NER.getFeatureVectors(NER.trainSentences, ftypes)
+    featVec = NER.getFeatureVectors(NER.trainSentences, ftypes)
 
+    flattenFeatVec = NER.flattenFeatureVectors(featVec)
+
+
+    print('hello')
     # genereate_trace_file(readableTestFeatures, argv[0], 'readable', 'ALL')
 
     # genereate_trace_file(TEST, argv[1], 'readable', 'WHAT')
