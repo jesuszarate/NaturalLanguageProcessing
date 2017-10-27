@@ -1,4 +1,5 @@
 import sys
+import logging
 from pathlib import Path
 
 import re
@@ -86,17 +87,19 @@ class ner:
 
     def word(self, wordPos, sentence):
         word = sentence[wordPos]
-        return word['word'] if word['word'] in self.setOfWords else self.UNK
+        return self.containsWord(word['word'])
+        #return word['word'] if word['word'] in self.setOfWords else self.UNK
 
     def wordcon(self, wordPos, sentence):
         wordcon = self.PI
 
         if wordPos > 0:
-            wordcon = sentence[wordPos - 1]['word']
+            wordcon = self.containsWord(sentence[wordPos - 1]['word'])
         if wordPos + 1 < len(sentence):
-            wordcon += ' ' + sentence[wordPos + 1]['word']
+            wordcon += ' ' + self.containsWord(sentence[wordPos + 1]['word'])
         else:
             wordcon += ' ' + self.OMEGA
+
         return wordcon
 
     def abbr(self, wordPos, sentence):
@@ -158,7 +161,6 @@ class ner:
     def getFeatures(self, ftypes):
         if self.featureVectors == None:
             self.generateFeatures(ftypes)
-        return self.featureVectors
 
     def generateFeatures(self, ftypes):
         id = 1
@@ -192,6 +194,8 @@ class ner:
             id += 1
 
     def getFeatureVectors(self, sentences, ftypes):
+        self.getFeatures(ftypes)
+
         features = []
         for sentence in sentences:
             features.append(self.generateVectorFeature(sentence, ftypes))
@@ -218,7 +222,7 @@ class ner:
         word = 'word-{0}'.format(sentence[wordPos]['word'])
 
         if word in self.featureVectors:
-            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            # return '{0}:{1}'.format(self.featureVectors[word], 1)
             return self.getFeatTuple(word)
 
     def wordconVec(self, wordPos, sentence):
@@ -227,18 +231,18 @@ class ner:
 
         conList = list()
         if prevword in self.featureVectors:
-            #conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
+            # conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
             conList.append(self.getFeatTuple(prevword))
         if nextword in self.featureVectors:
             conList.append(self.getFeatTuple(nextword))
-            #conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
+            # conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
         return conList
 
     def abbrVec(self, wordPos, sentence):
         word = 'abbreviation' if 'yes' == self.abbr(wordPos, sentence) else ''
 
         if word in self.featureVectors:
-            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            # return '{0}:{1}'.format(self.featureVectors[word], 1)
             return self.getFeatTuple(word)
         return None
 
@@ -246,7 +250,7 @@ class ner:
         word = 'capitalized' if sentence[wordPos]['word'][0].isupper() else ''
 
         if word in self.featureVectors:
-            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            # return '{0}:{1}'.format(self.featureVectors[word], 1)
             return self.getFeatTuple(word)
         return None
 
@@ -254,14 +258,14 @@ class ner:
         word = 'location' if 'yes' == self.location(wordPos, sentence) else ''
 
         if word in self.featureVectors:
-            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            # return '{0}:{1}'.format(self.featureVectors[word], 1)
             return self.getFeatTuple(word)
 
     def posVec(self, wordPos, sentence):
         word = 'pos-{0}'.format(sentence[wordPos]['pos'])
 
         if word in self.featureVectors:
-            #return '{0}:{1}'.format(self.featureVectors[word], 1)
+            # return '{0}:{1}'.format(self.featureVectors[word], 1)
             return self.getFeatTuple(word)
 
     def posconVec(self, wordPos, sentence):
@@ -270,14 +274,17 @@ class ner:
 
         conList = list()
         if prevword in self.featureVectors:
-            #conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
+            # conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
             conList.append(self.getFeatTuple(prevword))
         if nextword in self.featureVectors:
             conList.append(self.getFeatTuple(nextword))
-            #conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
+            # conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
         return conList
 
     # Helpers
+    def containsWord(self, word):
+        return word if word in self.setOfWords else self.UNK
+
     def getWord(self, wordPos, sentence, type):
 
         if wordPos < 0:
@@ -349,6 +356,7 @@ class ner:
     def featComperator(self, feat):
         return feat[0]
 
+
 def does_file_exist(filename):
     file = Path('ner-input-files/{0}'.format(filename))
     if file.is_file():
@@ -363,7 +371,9 @@ def getFileFormat(filename):
 # Writing files
 def genereate_trace_file(data, name, type, extension=''):
     extension = extension if extension == '' else '.' + extension
-    with open('OutputFiles/{0}.{1}{2}'.format(name, type, extension), 'w') as of:
+    fileLocation = getOutputFileLocation(name, type, extension)
+    print('Writing to: {0}'.format(fileLocation))
+    with open(fileLocation, 'w') as of:
         for sentence in data:
             for line in sentence:
                 for k, v in line.items():
@@ -372,9 +382,11 @@ def genereate_trace_file(data, name, type, extension=''):
 
 
 def writeFeatureVectorsToFile(flattenFeatVec, name, type, extension=''):
-
     extension = extension if extension == '' else '.' + extension
-    with open('OutputFiles/{0}.{1}{2}'.format(name, type, extension), 'w') as of:
+    fileLocation = getOutputFileLocation(name, type, extension)
+    print('Writing to: {0}'.format(fileLocation))
+    with open(fileLocation, 'w') as of:
+    #with open('OutputFiles/{0}.{1}{2}'.format(name, type, extension), 'w') as of:
 
         for line in flattenFeatVec:
             of.write('{0} '.format(line[0]))
@@ -386,6 +398,12 @@ def writeFeatureVectorsToFile(flattenFeatVec, name, type, extension=''):
             of.write('{0}:{1} '.format(entry[0], entry[1]))
             of.write('\n')
 
+def getOutputFileLocation(name, type, extension):
+    return 'OutputFiles/{0}.{1}{2}'.format(name, type, extension)
+
+def getReadableFeatures(NER, data, fileName, ftypes, type):
+    readableTrainFeatures = NER.generateReadableFeatures(data, ftypes)
+    genereate_trace_file(readableTrainFeatures, fileName, 'readable', type)
 
 
 def main(argv):
@@ -413,16 +431,22 @@ def main(argv):
 
     # testSentences = NER.getSentences(getFileFormat(argv[1]))
 
-    readableTrainFeatures = NER.generateReadableFeatures(NER.trainSentences, ftypes)
+    # To produce the readable features one param at a time
+    if len(ftypes) < 3:
+        type = ftypes[len(ftypes) - 1]
+        getReadableFeatures(NER, NER.trainSentences, argv[0], ftypes, type)
+        getReadableFeatures(NER, NER.testSentences, argv[1], ftypes, type)
+
     # readableTestFeatures = NER.generateReadableFeatures(NER.testSentences, ftypes)
 
-    WORDVEC = NER.getFeatures(ftypes)
 
+    '''
+    # TRAIN FEATURE VECTOR
     featVec = NER.getFeatureVectors(NER.trainSentences, ftypes)
-
     flattenFeatVec = NER.flattenFeatureVectors(featVec)
-
     writeFeatureVectorsToFile(flattenFeatVec, argv[0], 'vector')
+    '''
+
 
     # genereate_trace_file(readableTestFeatures, argv[0], 'readable', 'ALL')
 
