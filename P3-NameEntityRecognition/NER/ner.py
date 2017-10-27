@@ -221,7 +221,6 @@ class ner:
         word = 'word-{0}'.format(sentence[wordPos]['word'])
 
         if word in self.featureVectors:
-            # return '{0}:{1}'.format(self.featureVectors[word], 1)
             return self.getFeatTuple(word)
 
     def wordconVec(self, wordPos, sentence):
@@ -230,11 +229,9 @@ class ner:
 
         conList = list()
         if prevword in self.featureVectors:
-            # conList.append('{0}:{1}'.format(self.featureVectors[prevword], 1))
             conList.append(self.getFeatTuple(prevword))
         if nextword in self.featureVectors:
             conList.append(self.getFeatTuple(nextword))
-            # conList.append('{0}:{1}'.format(self.featureVectors[nextword], 1))
         return conList
 
     def abbrVec(self, wordPos, sentence):
@@ -242,7 +239,6 @@ class ner:
         word = 'abbreviation' if 'yes' == self.abbr(wordPos, sentence) else ''
 
         if word in self.featureVectors:
-            # return '{0}:{1}'.format(self.featureVectors[word], 1)
             return self.getFeatTuple(word)
         return None
 
@@ -297,7 +293,7 @@ class ner:
                 return self.OMEGA
             elif type == 'pos':
                 return self.OMEGAPOS
-        return sentence[wordPos]['pos']
+        return sentence[wordPos][type]
 
     def fillDefaults(self, feature):
         for k, val in feature.items():
