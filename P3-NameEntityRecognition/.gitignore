@@ -54,3 +54,7 @@ NER/ner-trace-files
 .gitignore~
 NER/OutputFiles/
 .idea/
+/NER/ner-input-files/myTestFile.txt
+NER/ner-input-files/myTestFile.txt
+key/
+liblinear-1.93/

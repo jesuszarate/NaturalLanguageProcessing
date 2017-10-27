@@ -105,7 +105,6 @@ class ner:
     def abbr(self, wordPos, sentence):
         word = sentence[wordPos]
 
-        # alphaNumPeriod = re.compile('^[a-zA-Z0-9_(\.)+]*$')
         alphaNumPeriod = re.compile('^[a-zA-Z\.]*\.$')
 
         if alphaNumPeriod.match(word['word']) and \
@@ -190,7 +189,7 @@ class ner:
             self.featureVectors['location'] = id
             id += 1
         if 'ABBR' in ftypes:
-            self.featureVectors['abbreviations'] = id
+            self.featureVectors['abbreviation'] = id
             id += 1
 
     def getFeatureVectors(self, sentences, ftypes):
@@ -239,6 +238,7 @@ class ner:
         return conList
 
     def abbrVec(self, wordPos, sentence):
+
         word = 'abbreviation' if 'yes' == self.abbr(wordPos, sentence) else ''
 
         if word in self.featureVectors:
@@ -394,8 +394,9 @@ def writeFeatureVectorsToFile(flattenFeatVec, name, type, extension=''):
             for i in range(1, len(line) - 1):
                 entry = line[i]
                 of.write('{0}:{1} '.format(entry[0], entry[1]))
-            entry = line[len(line) - 1]
-            of.write('{0}:{1} '.format(entry[0], entry[1]))
+            if len(line) > 1:
+                entry = line[len(line) - 1]
+                of.write('{0}:{1} '.format(entry[0], entry[1]))
             of.write('\n')
 
 
@@ -406,6 +407,13 @@ def getOutputFileLocation(name, type, extension):
 def getReadableFeatures(NER, data, fileName, ftypes, type):
     readableTrainFeatures = NER.generateReadableFeatures(data, ftypes)
     genereate_trace_file(readableTrainFeatures, fileName, 'readable', type)
+
+
+def getFeatureVectors(NER, fileName, ftypes, type, test=False):
+    sentences = NER.testSentences if test else NER.trainSentences
+    featVec = NER.getFeatureVectors(sentences, ftypes)
+    flattenFeatVec = NER.flattenFeatureVectors(featVec)
+    writeFeatureVectorsToFile(flattenFeatVec, fileName, 'vector', type)
 
 
 def main(argv):
@@ -436,27 +444,18 @@ def main(argv):
     # To produce the readable features one param at a time
     if len(ftypes) < 3:
         type = ftypes[len(ftypes) - 1]
-        getReadableFeatures(NER, NER.trainSentences, argv[0], ftypes, type)
-        getReadableFeatures(NER, NER.testSentences, argv[1], ftypes, type)
+        getReadableFeatures(NER, NER.trainSentences, argv[0], ftypes, type) # For train
+        getReadableFeatures(NER, NER.testSentences, argv[1], ftypes, type) # For test
 
-    # readableTestFeatures = NER.generateReadableFeatures(NER.testSentences, ftypes)
+        getFeatureVectors(NER, argv[0], ftypes, type) # For train
+        getFeatureVectors(NER, argv[1], ftypes, type, test=True) # For test
 
+    elif len(ftypes) == 7:
+        getReadableFeatures(NER, NER.trainSentences, argv[0], ftypes, 'ALL')
+        getReadableFeatures(NER, NER.testSentences, argv[1], ftypes, 'ALL')
 
-    '''
-    # TRAIN FEATURE VECTOR
-    featVec = NER.getFeatureVectors(NER.trainSentences, ftypes)
-    flattenFeatVec = NER.flattenFeatureVectors(featVec)
-    writeFeatureVectorsToFile(flattenFeatVec, argv[0], 'vector')
-    '''
-
-
-    # genereate_trace_file(readableTestFeatures, argv[0], 'readable', 'ALL')
-
-    # genereate_trace_file(TEST, argv[1], 'readable', 'WHAT')
-
-    # for ftype in ftypes:
-    #     genereate_trace_file(WORD, argv[0], 'readable', ftype)
-    #     genereate_trace_file(TEST, argv[1], 'readable', ftype)
+        getFeatureVectors(NER, argv[0], ftypes, 'ALL') # For train
+        getFeatureVectors(NER, argv[1], ftypes, 'ALL', test=True) # For test
 
 
 if __name__ == "__main__":
