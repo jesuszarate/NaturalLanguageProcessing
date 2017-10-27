@@ -88,7 +88,7 @@ class ner:
     def word(self, wordPos, sentence):
         word = sentence[wordPos]
         return self.containsWord(word['word'])
-        #return word['word'] if word['word'] in self.setOfWords else self.UNK
+        # return word['word'] if word['word'] in self.setOfWords else self.UNK
 
     def wordcon(self, wordPos, sentence):
         wordcon = self.PI
@@ -105,10 +105,10 @@ class ner:
     def abbr(self, wordPos, sentence):
         word = sentence[wordPos]
 
-        alphaNumPeriod = re.compile('^[a-zA-Z0-9_(\.)+]*$')
+        # alphaNumPeriod = re.compile('^[a-zA-Z0-9_(\.)+]*$')
+        alphaNumPeriod = re.compile('^[a-zA-Z\.]*\.$')
 
-        if str.endswith(word['word'], '.') and \
-                alphaNumPeriod.match(word['word']) and \
+        if alphaNumPeriod.match(word['word']) and \
                         len(word['word']) <= 4:
             return 'yes'
         else:
@@ -386,7 +386,7 @@ def writeFeatureVectorsToFile(flattenFeatVec, name, type, extension=''):
     fileLocation = getOutputFileLocation(name, type, extension)
     print('Writing to: {0}'.format(fileLocation))
     with open(fileLocation, 'w') as of:
-    #with open('OutputFiles/{0}.{1}{2}'.format(name, type, extension), 'w') as of:
+        # with open('OutputFiles/{0}.{1}{2}'.format(name, type, extension), 'w') as of:
 
         for line in flattenFeatVec:
             of.write('{0} '.format(line[0]))
@@ -398,8 +398,10 @@ def writeFeatureVectorsToFile(flattenFeatVec, name, type, extension=''):
             of.write('{0}:{1} '.format(entry[0], entry[1]))
             of.write('\n')
 
+
 def getOutputFileLocation(name, type, extension):
     return 'OutputFiles/{0}.{1}{2}'.format(name, type, extension)
+
 
 def getReadableFeatures(NER, data, fileName, ftypes, type):
     readableTrainFeatures = NER.generateReadableFeatures(data, ftypes)
