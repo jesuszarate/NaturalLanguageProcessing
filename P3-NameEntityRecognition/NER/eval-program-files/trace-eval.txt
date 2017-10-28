@@ -1,0 +1,14 @@
+Correct PER = NONE
+Recall PER = 0/1
+Precision PER = 0/2
+
+Correct LOC = Israel[1-1] | Haifa , Israel[15-17]
+Recall LOC = 2/2
+Precision LOC = 2/2
+
+Correct ORG = NONE
+Recall ORG = n/a
+Precision ORG = 0/2
+
+Average Recall = 2/3
+Average Precision = 2/6
