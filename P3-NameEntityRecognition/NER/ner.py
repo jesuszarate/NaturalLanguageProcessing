@@ -419,12 +419,15 @@ def main(argv):
 
     if not (does_file_exist(argv[0])):
         print('In argument 1 file does not exist: {0}'.format(argv[0]))
+        print('Note: Make sure the input files are stored in the ner-input-files folder')
         sys.exit(2)
     elif not does_file_exist(argv[1]):
         print('In argument 2 file does not exist: {0}'.format(argv[1]))
+        print('Note: Make sure the input files are stored in the ner-input-files folder')
         sys.exit(2)
     elif not does_file_exist(argv[2]):
         print('In argument 2 file does not exist: {0}'.format(argv[2]))
+        print('Note: Make sure the input files are stored in the ner-input-files folder')
         sys.exit(2)
 
     ftypes = []
